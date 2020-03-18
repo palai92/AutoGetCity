@@ -1,0 +1,85 @@
+from selenium import webdriver
+import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver import ActionChains
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.keys import Keys
+import csv
+import pandas as pd
+from selenium.common.exceptions import NoSuchElementException
+import xlwings as xw
+
+#wb = xw.Book('output.xlsx')
+f=open("pass.txt","r")
+lines=f.readlines()
+pasword=lines[0]
+
+fb = "https://partners.facebook.com/login/?next=https%3A%2F%2Fpartners.facebook.com%2Fmobile_partner_marketing%2Fapps%2F%3Fpartner_id%3D103441950637%26app%3Dmarket_insights%26section%3Dprofiles"
+driver = webdriver.Chrome('chromedriver.exe') 
+driver.get(fb)
+
+user = driver.find_element_by_id("email")
+pas = driver.find_element_by_id("pass")
+
+user.send_keys("username")
+pas.send_keys(pasword)
+
+driver.find_element_by_name("login").click()
+driver.find_element_by_xpath("//a[@data-testid='market_insights']").click()
+driver.find_element_by_xpath("//button[@data-testid='profiles']").click()
+
+driver.implicitly_wait(10)
+driver.find_element_by_xpath("//span[@class='noiqt527 ng1yii34 sijqu29c irhm863r']").click()
+
+time.sleep(4) 
+
+#206086560121 indosat
+#103441950637 tsel
+#30700795165 3
+#14741206246 xl
+#98883799122 smart
+
+
+driver.find_element_by_xpath("//div[contains(text(), 'All networks')]").click()
+driver.find_element_by_xpath("//div[contains(text(), 'Smartfren network')]").click()
+
+driver.find_element_by_xpath("//div[contains(text(),'Mar 9, 2020 (Latest)')]").click()
+driver.find_element_by_xpath("//div[contains(text(),'Feb 17, 2020')]").click()
+
+driver.execute_script("document.body.style.zoom='50%'")
+element = driver.find_element_by_xpath("//div[@data-testid='location']")
+driver.execute_script("arguments[0].click();", element)
+
+
+baca = pd.read_csv('input2.csv')
+tri = []
+for i in baca.index:
+    city = driver.find_element_by_xpath("//*[contains(text(), 'Search city')]")
+    driver.execute_script("arguments[0].click();", city)
+    ent = driver.find_element_by_xpath("//input[@class='_58al']")
+    ent.send_keys(baca["City"][i], Keys.ENTER, Keys.ESCAPE)
+    time.sleep(10)
+    try:
+        keluar = driver.find_element_by_xpath("//*[@id='dataVizHeader']/span[2]/span[1]/strong") 
+        if keluar.is_displayed():
+            try:
+                nilai = driver.find_element_by_xpath("//*[@id='dataVizHeader']/span[2]/span[3]/strong") 
+                if nilai.is_displayed():
+                    if ('K' in nilai.text) or ('M' in nilai.text):
+                        temp = nilai.text
+                    else:
+                        temp = int(nilai.text)/1000
+                        tri.append(temp)
+                print(i,'|',baca["City"][i] , '|' , temp)
+            except NoSuchElementException:
+                print(i,'|',baca["City"][i], '|' , "nol")
+                
+    except NoSuchElementException:
+        print(i,'|',baca["City"][i] , '|' , "NoLoad")
+
+         #nilai = driver.find_element_by_xpath("//*[@id='dataVizHeader']/span[2]/span[3]/strong")
+         #print(masuk["X"][i] + '|' + nilai.text)
+    
+    bersih = driver.find_element_by_link_text("Clear selection")
+    driver.execute_script("arguments[0].click();", bersih)
